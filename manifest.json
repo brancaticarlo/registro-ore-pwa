@@ -4,9 +4,14 @@
   "description": "Un'applicazione per registrare e consultare ore di straordinario e giorni di assenza (ferie, permessi, malattia), con riepiloghi, storico e funzionalità di backup dei dati.",
   "icons": [
     {
-      "src": "/vite.svg",
-      "type": "image/svg+xml",
-      "sizes": "any"
+      "src": "icons/icon-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icons/icon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512"
     }
   ],
   "start_url": ".",
