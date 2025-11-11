@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0D47A1" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>Registro Ore Lavorative</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'primary': '#0D47A1',
+              'primary-dark': '#0a3a82',
+              'secondary': '#1E88E5',
+              'accent': '#42A5F5',
+              'light': '#F5F5F5',
+              'dark': '#212121',
+              'permission': '#D32F2F',
+              'permission-dark': '#B71C1C',
+            }
+          }
+        }
+      }
+    </script>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "recharts": "https://aistudiocdn.com/recharts@^3.4.1"
+  }
+}
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+</head>
+  <body class="bg-light dark:bg-dark">
+    <div id="root"></div>
+    <script type="module">
+import React, { useState, useEffect, useCallback, useMemo, cloneElement, useRef } from 'https://aistudiocdn.com/react@^19.2.0';
+import ReactDOM from 'https://aistudiocdn.com/react-dom@^19.2.0/client';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'https://aistudiocdn.com/recharts@^3.4.1';
+
+// --- From constants.ts ---
+const COLOR_PALETTE = [
+  'bg-blue-200 text-blue-800 dark:bg-blue-700 dark:text-blue-100',
+  'bg-green-200 text-green-800 dark:bg-green-700 dark:text-green-100',
+  'bg-yellow-200 text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100',
+  'bg-purple-200 text-purple-800 dark:bg-purple-700 dark:text-purple-100',
+  'bg-pink-200 text-pink-800 dark:bg-pink-700 dark:text-pink-100',
+  'bg-indigo-200 text-indigo-800 dark:bg-indigo-700 dark:text-indigo-100',
+  'bg-red-200 text-red-800 dark:bg-red-700 dark:text-red-100',
+  'bg-teal-200 text-teal-800 dark:bg-teal-700 dark:text-teal-100',
+];
+const LOCATION_COLOR_PALETTE = [
+  'bg-cyan-200 text-cyan-800 dark:bg-cyan-700 dark:text-cyan-100',
+  'bg-lime-200 text-lime-800 dark:bg-lime-700 dark:text-lime-100',
+  'bg-orange-200 text-orange-800 dark:bg-orange-700 dark:text-orange-100',
+  'bg-emerald-200 text-emerald-800 dark:bg-emerald-700 dark:text-emerald-100',
+  'bg-sky-200 text-sky-800 dark:bg-sky-700 dark:text-sky-100',
+  'bg-rose-200 text-rose-800 dark:bg-rose-700 dark:text-rose-100',
+];
+const DEFAULT_COLOR = 'bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200';
+
+const INITIAL_LOCATIONS = ['Machiavelli', 'Bologna'];
+const INITIAL_LOCATION_COLORS = {
+  'Machiavelli': 'bg-cyan-200 text-cyan-800 dark:bg-cyan-700 dark:text-cyan-100',
+  'Bologna': 'bg-lime-200 text-lime-800 dark:bg-lime-700 dark:text-lime-100',
+};
+const INITIAL_PERMISSION_COLORS = {
+  'Malattia': 'bg-red-200 text-red-800 dark:bg-red-700 dark:text-red-100',
+  'Ferie': 'bg-yellow-200 text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100',
+  'Permesso Retribuito': 'bg-blue-200 text-blue-800 dark:bg-blue-700 dark:text-blue-100',
+  'Permesso non Retribuito': 'bg-purple-200 text-purple-800 dark:bg-purple-700 dark:text-purple-100',
+};
+
+
+// --- From components/icons/Icons.tsx ---
+const PlusIcon = (props) => ( React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor", ...props }, React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M12 4.5v15m7.5-7.5h-15" })));
+const ChartBarIcon = (props) => ( React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor", ...props }, React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" })));
+const CalendarIcon = (props) => ( React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor", ...props }, React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0h18M-4.5 12h22.5" })));
+const HomeIcon = (props) => ( React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor", ...props }, React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M2.25 12l8.954-8.955a.75.75 0 011.06 0l8.955 8.955M3 13.5V21h6V15h6v6h6v-7.5M12 3v5.25" })));
+const PencilIcon = (props) => ( React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor", ...props }, React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" })));
+const TrashIcon = (props) => ( React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor", ...props }, React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.124-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.077-2.09.921-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" })));
+const CogIcon = (props) => ( React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor", ...props }, React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M10.343 3.94c.09-.542.56-1.007 1.11-1.226l.554-.221a6.75 6.75 0 013.692 0l.554.221c.55.219 1.02.684 1.11 1.226l.099.598a6.75 6.75 0 012.875 2.119l.444.405a1.125 1.125 0 010 1.592l-.444.405a6.75 6.75 0 01-2.875 2.119l-.099.598c-.09.542-.56 1.007-1.11 1.226l-.554.221a6.75 6.75 0 01-3.692 0l-.554-.221c-.55-.219-1.02-.684-1.11-1.226l-.099-.598a6.75 6.75 0 01-2.875-2.119l-.444-.405a1.125 1.125 0 010-1.592l.444.405a6.75 6.75 0 012.875-2.119l.099-.598z" }), React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M15 12a3 3 0 11-6 0 3 3 0 016 0z" })));
+const DownloadIcon = (props) => ( React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor", ...props }, React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" })));
+const UploadIcon = (props) => ( React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor", ...props }, React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" })));
+const BedIcon = (props) => ( React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor", ...props }, React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" })));
+const MagnifyingGlassIcon = (props) => ( React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor", ...props }, React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" })));
+
+
+// --- From hooks/useLogData.ts ---
+const LOG_ENTRIES_KEY = 'log_entries';
+const LOCATIONS_KEY = 'log_locations';
+const LOCATION_COLORS_KEY = 'log_location_colors';
+const PERMISSION_TYPES_KEY = 'log_permission_types';
+const PERMISSION_TYPE_COLORS_KEY = 'log_permission_type_colors';
+
+const useLogData = () => {
+  const [entries, setEntries] = useState([]);
+  const [locations, setLocations] = useState(INITIAL_LOCATIONS);
+  const [locationColors, setLocationColors] = useState(INITIAL_LOCATION_COLORS);
+  const [permissionTypes, setPermissionTypes] = useState(['Ferie', 'Malattia', 'Permesso Retribuito', 'Permesso non Retribuito']);
+  const [permissionTypeColors, setPermissionTypeColors] = useState(INITIAL_PERMISSION_COLORS);
+
+  const saveData = useCallback((key, data) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+    } catch (error) { console.error(`Failed to save ${key} to localStorage`, error); }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const storedEntries = localStorage.getItem(LOG_ENTRIES_KEY);
+      if (storedEntries) setEntries(JSON.parse(storedEntries));
+      
+      const storedLocations = localStorage.getItem(LOCATIONS_KEY);
+      if (storedLocations) {
+          const parsed = JSON.parse(storedLocations);
+          setLocations(prev => [...new Set([...prev, ...parsed])]);
+      }
+      
+      const storedLocationColors = localStorage.getItem(LOCATION_COLORS_KEY);
+      if (storedLocationColors) {
+          setLocationColors(prev => ({ ...prev, ...JSON.parse(storedLocationColors) }));
+      }
+
+      const storedPermissionTypes = localStorage.getItem(PERMISSION_TYPES_KEY);
+      if (storedPermissionTypes) setPermissionTypes(JSON.parse(storedPermissionTypes));
+
+      const storedPermissionTypeColors = localStorage.getItem(PERMISSION_TYPE_COLORS_KEY);
+      if (storedPermissionTypeColors) {
+          setPermissionTypeColors(prev => ({ ...INITIAL_PERMISSION_COLORS, ...JSON.parse(storedPermissionTypeColors) }));
+      }
+    } catch (error) { console.error("Failed to load data from localStorage", error); }
+  }, [saveData]);
+
+  const manageMetadata = useCallback((key, value, state, setter, colorState, colorSetter, storageKey, colorStorageKey, palette) => {
+    if (!value || state.includes(value)) return;
+
+    const updatedState = [...state, value];
+    
+    const usedColors = Object.values(colorState);
+    const availableColors = palette.filter(c => !usedColors.includes(c));
+    const newColor = availableColors.length > 0 ? availableColors[0] : palette[state.length % palette.length];
+
+    const updatedColors = { ...colorState, [value]: newColor };
+
+    setter(updatedState);
+    colorSetter(updatedColors);
+    saveData(storageKey, updatedState);
+    saveData(colorStorageKey, updatedColors);
+  }, [saveData]);
+  
+  const manageLocation = useCallback((location) => manageMetadata('location', location, locations, setLocations, locationColors, setLocationColors, LOCATIONS_KEY, LOCATION_COLORS_KEY, LOCATION_COLOR_PALETTE), [locations, locationColors, manageMetadata]);
+  const managePermissionType = useCallback((type) => manageMetadata('permissionType', type, permissionTypes, setPermissionTypes, permissionTypeColors, setPermissionTypeColors, PERMISSION_TYPES_KEY, PERMISSION_TYPE_COLORS_KEY, COLOR_PALETTE), [permissionTypes, permissionTypeColors, manageMetadata]);
+
+  const saveEntries = useCallback((newEntries) => {
+    const sortedEntries = [...newEntries].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    setEntries(sortedEntries);
+    saveData(LOG_ENTRIES_KEY, sortedEntries);
+  }, [saveData]);
+
+  const addEntry = useCallback((newEntry) => {
+    if (newEntry.type === 'overtime') manageLocation(newEntry.location);
+    if (newEntry.type === 'permission') managePermissionType(newEntry.permissionType);
+    const entryWithId = { ...newEntry, id: new Date().toISOString() + Math.random() };
+    saveEntries([...entries, entryWithId]);
+  }, [entries, saveEntries, manageLocation, managePermissionType]);
+
+  const updateEntry = useCallback((updatedEntry) => {
+    if (updatedEntry.type === 'overtime') manageLocation(updatedEntry.location);
+    if (updatedEntry.type === 'permission') managePermissionType(updatedEntry.permissionType);
+    const newEntries = entries.map(entry => entry.id === updatedEntry.id ? updatedEntry : entry);
+    saveEntries(newEntries);
+  }, [entries, saveEntries, manageLocation, managePermissionType]);
+
+  const deleteEntry = useCallback((id) => {
+    if (window.confirm("Sei sicuro di voler cancellare questa registrazione?")) {
+      saveEntries(entries.filter(entry => entry.id !== id));
+    }
+  }, [entries, saveEntries]);
+
+  const importData = useCallback((data) => {
+    if (data && Array.isArray(data.entries)) {
+        const sortedEntries = [...data.entries].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setEntries(sortedEntries);
+        setLocations(data.locations || []);
+        setLocationColors(data.locationColors || {});
+        setPermissionTypes(data.permissionTypes || ['Ferie', 'Malattia', 'Permesso Retribuito', 'Permesso non Retribuito']);
+        setPermissionTypeColors(data.permissionTypeColors || {});
+        
+        saveData(LOG_ENTRIES_KEY, sortedEntries);
+        saveData(LOCATIONS_KEY, data.locations || []);
+        saveData(LOCATION_COLORS_KEY, data.locationColors || {});
+        saveData(PERMISSION_TYPES_KEY, data.permissionTypes || []);
+        saveData(PERMISSION_TYPE_COLORS_KEY, data.permissionTypeColors || {});
+        return true;
+    }
+    return false;
+  }, [saveData]);
+
+  const allData = useMemo(() => ({
+    entries, locations, locationColors, permissionTypes, permissionTypeColors
+  }), [entries, locations, locationColors, permissionTypes, permissionTypeColors]);
+
+  return { ...allData, addEntry, updateEntry, deleteEntry, importData };
+};
+
+
+// --- From components/OvertimeForm.tsx ---
+const OvertimeForm = ({ onSave, onCancel, existingEntry, locations }) => {
+  const [date, setDate] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [notes, setNotes] = useState('');
+  const [location, setLocation] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (existingEntry) {
+      setDate(existingEntry.date);
+      setStartTime(existingEntry.startTime);
+      setEndTime(existingEntry.endTime);
+      setNotes(existingEntry.notes);
+      setLocation(existingEntry.location);
+    } else {
+      setDate(new Date().toISOString().split('T')[0]);
+    }
+  }, [existingEntry]);
+
+  const durationMinutes = useMemo(() => {
+    if (!date || !startTime || !endTime) return 0;
+    const startDate = new Date(`${date}T${startTime}`);
+    let endDate = new Date(`${date}T${endTime}`);
+    if (endDate <= startDate) endDate.setDate(endDate.getDate() + 1);
+    return Math.round((endDate - startDate) / 60000);
+  }, [date, startTime, endTime]);
+
+  const formatDuration = (minutes) => `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (durationMinutes <= 0) return setError('L\'orario di fine deve essere successivo a quello di inizio.');
+    if (!location.trim()) return setError('Il campo Sede è obbligatorio.');
+    setError('');
+    const entryData = { type: 'overtime', date, startTime, endTime, notes, location: location.trim(), duration: durationMinutes };
+    onSave(existingEntry ? { ...existingEntry, ...entryData } : entryData);
+  };
+
+  return React.createElement('div', { className: "max-w-lg mx-auto bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md" },
+    React.createElement('h2', { className: "text-2xl font-bold mb-6 text-center text-gray-800 dark:text-gray-200" }, existingEntry ? 'Modifica Straordinario' : 'Aggiungi Straordinario'),
+    React.createElement('form', { onSubmit: handleSubmit, className: "space-y-4" },
+      React.createElement('div', null,
+        React.createElement('label', { htmlFor: "date", className: "block text-sm font-medium text-gray-700 dark:text-gray-300" }, "Data"),
+        React.createElement('input', { type: "date", id: "date", value: date, onChange: (e) => setDate(e.target.value), required: true, className: "mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" })
+      ),
+      React.createElement('div', { className: "grid grid-cols-2 gap-4" },
+        React.createElement('div', null, React.createElement('label', { htmlFor: "startTime", className: "block text-sm font-medium text-gray-700 dark:text-gray-300" }, "Inizio"), React.createElement('input', { type: "time", id: "startTime", value: startTime, onChange: (e) => setStartTime(e.target.value), required: true, className: "mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" })),
+        React.createElement('div', null, React.createElement('label', { htmlFor: "endTime", className: "block text-sm font-medium text-gray-700 dark:text-gray-300" }, "Fine"), React.createElement('input', { type: "time", id: "endTime", value: endTime, onChange: (e) => setEndTime(e.target.value), required: true, className: "mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" }))
+      ),
+      React.createElement('div', { className: "text-center p-3 bg-gray-100 dark:bg-gray-700 rounded-md" }, React.createElement('span', { className: "text-sm font-medium text-gray-600 dark:text-gray-300" }, "Durata: "), React.createElement('span', { className: "text-lg font-bold text-primary dark:text-accent" }, formatDuration(durationMinutes))),
+      error && React.createElement('p', { className: "text-sm text-red-500 text-center" }, error),
+      React.createElement('div', null, React.createElement('label', { htmlFor: "location", className: "block text-sm font-medium text-gray-700 dark:text-gray-300" }, "Sede"), React.createElement('input', { id: "location", list: "locations-list", value: location, onChange: (e) => setLocation(e.target.value), required: true, className: "mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary", placeholder: "Seleziona o inserisci una sede" }), React.createElement('datalist', { id: "locations-list" }, locations.map(loc => React.createElement('option', { key: loc, value: loc })))),
+      React.createElement('div', null, React.createElement('label', { htmlFor: "notes", className: "block text-sm font-medium text-gray-700 dark:text-gray-300" }, "Note"), React.createElement('textarea', { id: "notes", rows: 3, value: notes, onChange: (e) => setNotes(e.target.value), className: "mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" })),
+      React.createElement('div', { className: "flex justify-end space-x-3 pt-2" }, React.createElement('button', { type: "button", onClick: onCancel, className: "px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 dark:bg-gray-600 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500" }, "Annulla"), React.createElement('button', { type: "submit", className: "px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary-dark" }, "Salva"))
+    )
+  );
+};
+
+
+// --- From components/PermissionForm.tsx ---
+const PermissionForm = ({ onSave, onCancel, existingEntry, permissionTypes }) => {
+  const [date, setDate] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [permissionType, setPermissionType] = useState('');
+  const [notes, setNotes] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (existingEntry) {
+      setDate(existingEntry.date);
+      setStartTime(existingEntry.startTime);
+      setEndTime(existingEntry.endTime);
+      setPermissionType(existingEntry.permissionType);
+      setNotes(existingEntry.notes);
+    } else {
+      setDate(new Date().toISOString().split('T')[0]);
+    }
+  }, [existingEntry]);
+
+  const durationMinutes = useMemo(() => {
+    if (!date || !startTime || !endTime) return 0;
+    const startDate = new Date(`${date}T${startTime}`);
+    let endDate = new Date(`${date}T${endTime}`);
+    if (endDate <= startDate) endDate.setDate(endDate.getDate() + 1);
+    return Math.round((endDate - startDate) / 60000);
+  }, [date, startTime, endTime]);
+
+  const formatDuration = (minutes) => `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (durationMinutes <= 0) return setError('L\'orario di fine deve essere successivo a quello di inizio.');
+    if (!permissionType.trim()) return setError('Il campo Giustificativo è obbligatorio.');
+    setError('');
+    const entryData = { type: 'permission', date, startTime, endTime, permissionType: permissionType.trim(), duration: durationMinutes, notes };
+    onSave(existingEntry ? { ...existingEntry, ...entryData } : entryData);
+  };
+
+  return React.createElement('div', { className: "max-w-lg mx-auto bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md" },
+    React.createElement('h2', { className: "text-2xl font-bold mb-6 text-center text-gray-800 dark:text-gray-200" }, existingEntry ? 'Modifica Permesso' : 'Aggiungi Permesso'),
+    React.createElement('form', { onSubmit: handleSubmit, className: "space-y-4" },
+      React.createElement('div', null,
+        React.createElement('label', { htmlFor: "date-permission", className: "block text-sm font-medium text-gray-700 dark:text-gray-300" }, "Data"),
+        React.createElement('input', { type: "date", id: "date-permission", value: date, onChange: (e) => setDate(e.target.value), required: true, className: "mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm" })
+      ),
+       React.createElement('div', { className: "grid grid-cols-2 gap-4" },
+        React.createElement('div', null, React.createElement('label', { htmlFor: "startTime-permission", className: "block text-sm font-medium text-gray-700 dark:text-gray-300" }, "Inizio"), React.createElement('input', { type: "time", id: "startTime-permission", value: startTime, onChange: (e) => setStartTime(e.target.value), required: true, className: "mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm" })),
+        React.createElement('div', null, React.createElement('label', { htmlFor: "endTime-permission", className: "block text-sm font-medium text-gray-700 dark:text-gray-300" }, "Fine"), React.createElement('input', { type: "time", id: "endTime-permission", value: endTime, onChange: (e) => setEndTime(e.target.value), required: true, className: "mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm" }))
+      ),
+      React.createElement('div', { className: "text-center p-3 bg-gray-100 dark:bg-gray-700 rounded-md" }, React.createElement('span', { className: "text-sm font-medium text-gray-600 dark:text-gray-300" }, "Durata: "), React.createElement('span', { className: "text-lg font-bold text-permission dark:text-red-400" }, formatDuration(durationMinutes))),
+      error && React.createElement('p', { className: "text-sm text-red-500 text-center" }, error),
+      React.createElement('div', null, 
+        React.createElement('label', { htmlFor: "permissionType", className: "block text-sm font-medium text-gray-700 dark:text-gray-300" }, "Giustificativo"), 
+        React.createElement('input', { id: "permissionType", list: "permission-types-list", value: permissionType, onChange: (e) => setPermissionType(e.target.value), required: true, className: "mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm", placeholder: "Es. Ferie, Permesso..." }), React.createElement('datalist', { id: "permission-types-list" }, permissionTypes.map(type => React.createElement('option', { key: type, value: type }))),
+        React.createElement('p', { className: "mt-1 text-xs text-gray-500 dark:text-gray-400" }, "Puoi digitare un nuovo tipo di giustificativo se non è in elenco.")
+      ),
+      React.createElement('div', null, React.createElement('label', { htmlFor: "notes-permission", className: "block text-sm font-medium text-gray-700 dark:text-gray-300" }, "Note"), React.createElement('textarea', { id: "notes-permission", rows: 3, value: notes, onChange: (e) => setNotes(e.target.value), className: "mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm" })),
+      React.createElement('div', { className: "flex justify-end space-x-3 pt-2" }, React.createElement('button', { type: "button", onClick: onCancel, className: "px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 dark:bg-gray-600 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500" }, "Annulla"), React.createElement('button', { type: "submit", className: "px-4 py-2 text-sm font-medium text-white bg-permission rounded-md hover:bg-permission-dark" }, "Salva Permesso"))
+    )
+  );
+};
+
+
+// --- From components/Dashboard.tsx ---
+const Dashboard = ({ onAddOvertime, onAddPermission }) => {
+  return React.createElement('div', { className: "flex flex-col items-center justify-center h-full text-center" },
+    React.createElement('h2', { className: "text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2" }, "Benvenuto nel tuo Registro Ore"),
+    React.createElement('p', { className: "text-lg text-gray-500 dark:text-gray-400 mb-8" }, "Inizia registrando le tue ore di straordinario o i tuoi giorni di permesso."),
+    React.createElement('div', { className: "flex flex-col md:flex-row justify-center items-center gap-4 mt-8" },
+      React.createElement('button', { onClick: onAddOvertime, className: "w-64 md:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-dark" }, React.createElement(PlusIcon, { className: "w-5 h-5 mr-2" }), "Aggiungi Straordinario"),
+      React.createElement('button', { onClick: onAddPermission, className: "w-64 md:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-permission hover:bg-permission-dark" }, React.createElement(BedIcon, { className: "w-5 h-5 mr-2" }), "Aggiungi Permesso")
+    )
+  );
+};
+
+// --- From components/EntryCard.tsx ---
+const EntryCard = ({ entry, locationColors, permissionTypeColors, onEdit, onDelete }) => {
+  const isOvertime = entry.type === 'overtime';
+  const colorClass = isOvertime ? (locationColors[entry.location] || DEFAULT_COLOR) : (permissionTypeColors[entry.permissionType] || DEFAULT_COLOR);
+  const tag = isOvertime ? entry.location : entry.permissionType;
+  const formatDate = (dateString) => new Date(dateString).toLocaleDateString('it-IT', { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' });
+  const formatDuration = (minutes) => `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, '0')}m`;
+
+  return React.createElement('div', { className: "bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md flex flex-col md:flex-row md:items-center md:justify-between" },
+    React.createElement('div', { className: "flex-grow" },
+      React.createElement('div', { className: "flex justify-between items-start" },
+        React.createElement('div', null, React.createElement('p', { className: `font-bold text-lg ${isOvertime ? 'text-primary dark:text-accent' : 'text-permission dark:text-red-400'}` }, formatDate(entry.date)), React.createElement('p', { className: "text-sm text-gray-600 dark:text-gray-400" }, `${entry.startTime} - ${entry.endTime}`)),
+        React.createElement('div', { className: "text-right md:hidden" }, React.createElement('p', { className: "font-bold text-xl text-gray-800 dark:text-gray-200" }, formatDuration(entry.duration)), React.createElement('span', { className: `px-2 py-1 text-xs font-semibold rounded-full ${colorClass}` }, tag))
+      ),
+      React.createElement('p', { className: "mt-2 text-gray-700 dark:text-gray-300" }, entry.notes || 'Nessuna nota.')
+    ),
+    React.createElement('div', { className: "flex items-center mt-4 md:mt-0 md:ml-4" },
+      React.createElement('div', { className: "hidden md:flex flex-col items-end mr-4" }, React.createElement('p', { className: "font-bold text-xl text-gray-800 dark:text-gray-200" }, formatDuration(entry.duration)), React.createElement('span', { className: `px-2 py-1 text-xs font-semibold rounded-full ${colorClass}` }, tag)),
+      React.createElement('div', { className: "flex space-x-2" }, React.createElement('button', { onClick: () => onEdit(entry), className: "p-2 text-blue-600 hover:bg-blue-100 dark:hover:bg-gray-700 rounded-full" }, React.createElement(PencilIcon, { className: "w-5 h-5" })), React.createElement('button', { onClick: () => onDelete(entry.id), className: "p-2 text-red-600 hover:bg-red-100 dark:hover:bg-gray-700 rounded-full" }, React.createElement(TrashIcon, { className: "w-5 h-5" })))
+    )
+  );
+};
+
+
+// --- From components/HistoryList.tsx ---
+const HistoryList = ({ entries, onEdit, onDelete, locationColors, permissionTypeColors }) => {
+  const [filterType, setFilterType] = useState('all');
+  const [filterKeyword, setFilterKeyword] = useState('');
+
+  const formatDuration = (minutes) => `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, '0')}m`;
+
+  const totals = useMemo(() => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    const monthly = { overtime: 0, permission: 0 };
+
+    entries.forEach(e => {
+      const entryDate = new Date(e.date + 'T00:00:00'); // Ensure date is parsed in local timezone
+      if (entryDate >= startOfMonth) {
+        if(e.type === 'overtime' || e.type === 'permission') {
+            monthly[e.type] += e.duration;
+        }
+      }
+    });
+    return { monthly };
+  }, [entries]);
+
+  const filteredEntries = useMemo(() => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    endOfMonth.setHours(23, 59, 59, 999);
+
+    return entries.filter(entry => {
+      const entryDate = new Date(entry.date + 'T00:00:00');
+      if (entryDate < startOfMonth || entryDate > endOfMonth) {
+        return false;
+      }
+      
+      const typeMatch = filterType === 'all' || entry.type === filterType;
+      const keywordMatch = !filterKeyword || JSON.stringify(entry).toLowerCase().includes(filterKeyword.toLowerCase());
+      return typeMatch && keywordMatch;
+    });
+  }, [entries, filterType, filterKeyword]);
+  
+  const monthName = useMemo(() => new Date().toLocaleString('it-IT', { month: 'long', year: 'numeric' }), []);
+  
+  return React.createElement('div', { className: "space-y-6" },
+    React.createElement('div', { className: "bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md" },
+        React.createElement('h3', { className: "text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4 text-center" }, `Riepilogo per ${monthName}`),
+        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-gray-200 dark:border-gray-700 pt-4" },
+            React.createElement('div', { className: "text-center" },
+                React.createElement('h4', { className: "text-md font-semibold text-gray-600 dark:text-gray-300" }, "Totale Straordinari"),
+                React.createElement('p', { className: `text-2xl font-bold text-primary dark:text-accent mt-1` }, formatDuration(totals.monthly.overtime))
+            ),
+            React.createElement('div', { className: "text-center" },
+                React.createElement('h4', { className: "text-md font-semibold text-gray-600 dark:text-gray-300" }, "Totale Permessi"),
+                React.createElement('p', { className: `text-2xl font-bold text-permission dark:text-red-400 mt-1` }, formatDuration(totals.monthly.permission))
+            )
+        )
+    ),
+    React.createElement('div', { className: "bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md" },
+      React.createElement('h3', { className: "text-lg font-semibold mb-3 text-gray-800 dark:text-gray-200" }, "Filtra Storico"),
+      React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
+        React.createElement('select', { value: filterType, onChange: e => setFilterType(e.target.value), className: "w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm" },
+            React.createElement('option', { value: "all" }, "Mostra Tutto"), React.createElement('option', { value: "overtime" }, "Solo Straordinari"), React.createElement('option', { value: "permission" }, "Solo Permessi")),
+        React.createElement('input', { type: "text", placeholder: "Cerca per parola chiave...", value: filterKeyword, onChange: e => setFilterKeyword(e.target.value), className: "w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm" })
+      )),
+    React.createElement('div', { className: "space-y-4" },
+      filteredEntries.length > 0 ? filteredEntries.map(entry => React.createElement(EntryCard, { key: entry.id, entry, locationColors, permissionTypeColors, onEdit, onDelete })) : React.createElement('div', { className: "text-center py-10" }, React.createElement('p', { className: "text-gray-500 dark:text-gray-400" }, "Nessuna registrazione trovata per il mese in corso."))
+    )
+  );
+};
+
+
+// --- From components/SearchView.tsx ---
+const SearchView = ({ entries, permissionTypes, locationColors, permissionTypeColors, onEdit, onDelete }) => {
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [filterType, setFilterType] = useState('all');
+  const [filterKeyword, setFilterKeyword] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState('');
+
+  const formatDuration = (minutes) => `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, '0')}m`;
+
+  const currentYearTotals = useMemo(() => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const totals = {
+      overtime: 0,
+      permissions: {}
+    };
+    permissionTypes.forEach(type => { totals.permissions[type] = 0; });
+
+    entries.forEach(entry => {
+      if (new Date(entry.date).getFullYear() === currentYear) {
+        if (entry.type === 'overtime') {
+          totals.overtime += entry.duration;
+        } else if (entry.type === 'permission') {
+          if (totals.permissions[entry.permissionType] !== undefined) {
+            totals.permissions[entry.permissionType] += entry.duration;
+          } else {
+            totals.permissions[entry.permissionType] = entry.duration;
+          }
+        }
+      }
+    });
+    return totals;
+  }, [entries, permissionTypes]);
+
+  const filteredEntries = useMemo(() => {
+    return entries.filter(entry => {
+      const entryDate = new Date(entry.date + 'T00:00:00');
+      const start = startDate ? new Date(startDate + 'T00:00:00') : null;
+      const end = endDate ? new Date(endDate + 'T00:00:00') : null;
+      
+      if (start && entryDate < start) return false;
+      if (end && entryDate > end) return false;
+
+      let typeMatch = false;
+      if (filterType === 'all') {
+        typeMatch = true;
+      } else if (filterType === 'overtime') {
+        typeMatch = entry.type === 'overtime';
+      } else if (filterType === 'permission') {
+        typeMatch = entry.type === 'permission';
+      } else { // Specific permission type
+        typeMatch = entry.type === 'permission' && entry.permissionType === filterType;
+      }
+      if (!typeMatch) return false;
+
+      if (filterKeyword && !JSON.stringify(entry).toLowerCase().includes(filterKeyword.toLowerCase())) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [entries, startDate, endDate, filterType, filterKeyword]);
+
+  const handleMonthChange = (e) => {
+    const value = e.target.value;
+    setSelectedMonth(value);
+    if (value) {
+      const [year, month] = value.split('-').map(Number);
+      const lastDayOfMonth = new Date(year, month, 0).getDate();
+      const monthStr = String(month).padStart(2, '0');
+      const firstDayStr = `${year}-${monthStr}-01`;
+      const lastDayStr = `${year}-${monthStr}-${String(lastDayOfMonth).padStart(2, '0')}`;
+      setStartDate(firstDayStr);
+      setEndDate(lastDayStr);
+    } else {
+      setStartDate('');
+      setEndDate('');
+    }
+  };
+  
+  const generateMonthOptions = useMemo(() => {
+    const options = [];
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    // Current year
+    for (let i = 11; i >= 0; i--) {
+        const monthDate = new Date(currentYear, i, 1);
+        const value = `${currentYear}-${String(i + 1).padStart(2, '0')}`;
+        const label = monthDate.toLocaleString('it-IT', { month: 'long' });
+        options.push(React.createElement('option', { key: value, value: value }, label));
+    }
+    return options;
+  }, []);
+
+  return React.createElement('div', { className: "space-y-6" },
+    React.createElement('div', { className: "bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md" },
+      React.createElement('h3', { className: "text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200" }, `Riepilogo Anno ${new Date().getFullYear()}`),
+      React.createElement('div', { className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" },
+        React.createElement('div', { className: "text-center p-3 rounded-md bg-green-200 text-green-800 dark:bg-green-700 dark:text-green-100" },
+          React.createElement('h4', { className: "text-md font-semibold" }, "Totale Straordinari"),
+          React.createElement('p', { className: "text-2xl font-bold mt-1" }, formatDuration(currentYearTotals.overtime))
+        ),
+        Object.entries(currentYearTotals.permissions).map(([type, duration]) => {
+            if (duration <= 0) return null;
+            const colorClass = permissionTypeColors[type] || DEFAULT_COLOR;
+            return React.createElement('div', { key: type, className: `text-center p-3 rounded-md ${colorClass}` },
+                React.createElement('h4', { className: "text-md font-semibold" }, type),
+                React.createElement('p', { className: "text-2xl font-bold mt-1" }, formatDuration(duration))
+            )
+        })
+      )
+    ),
+    React.createElement('div', { className: "bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md" },
+      React.createElement('h3', { className: "text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200" }, "Filtra Risultati"),
+      React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
+        React.createElement('div', null,
+          React.createElement('label', { htmlFor: "month-select", className: "block text-sm font-medium text-gray-700 dark:text-gray-300" }, "Seleziona Mese"),
+          React.createElement('select', { id: "month-select", value: selectedMonth, onChange: handleMonthChange, className: "mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm" },
+            React.createElement('option', { value: "" }, "Periodo personalizzato"),
+            generateMonthOptions
+          )
+        ),
+        React.createElement('div', null,
+          React.createElement('label', { htmlFor: "filter-type", className: "block text-sm font-medium text-gray-700 dark:text-gray-300" }, "Tipo"),
+          React.createElement('select', { id: "filter-type", value: filterType, onChange: (e) => setFilterType(e.target.value), className: "mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm" },
+            React.createElement('option', { value: "all" }, "Tutto"),
+            React.createElement('option', { value: "overtime" }, "Straordinari"),
+            React.createElement('option', { value: "permission" }, "Tutti i Permessi"),
+            React.createElement('optgroup', { label: "Tipi di Permesso" }, permissionTypes.map(type => React.createElement('option', { key: type, value: type }, type)))
+          )
+        ),
+        React.createElement('div', null,
+          React.createElement('label', { htmlFor: "startDate-search", className: "block text-sm font-medium text-gray-700 dark:text-gray-300" }, "Da"),
+          React.createElement('input', { type: "date", id: "startDate-search", value: startDate, onChange: (e) => { setStartDate(e.target.value); setSelectedMonth(''); }, className: "mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm", disabled: !!selectedMonth })
+        ),
+        React.createElement('div', null,
+          React.createElement('label', { htmlFor: "endDate-search", className: "block text-sm font-medium text-gray-700 dark:text-gray-300" }, "A"),
+          React.createElement('input', { type: "date", id: "endDate-search", value: endDate, onChange: (e) => { setEndDate(e.target.value); setSelectedMonth(''); }, className: "mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm", disabled: !!selectedMonth })
+        ),
+        React.createElement('div', { className: "md:col-span-2" },
+          React.createElement('label', { htmlFor: "keyword-search", className: "block text-sm font-medium text-gray-700 dark:text-gray-300" }, "Parola chiave"),
+          React.createElement('input', { type: "text", id: "keyword-search", placeholder: "Cerca in note, sedi, etc...", value: filterKeyword, onChange: (e) => setFilterKeyword(e.target.value), className: "mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm" })
+        )
+      )
+    ),
+    React.createElement('div', { className: "space-y-4" },
+      React.createElement('h3', { className: "text-lg font-semibold text-gray-800 dark:text-gray-200" }, `Risultati Trovati: ${filteredEntries.length}`),
+      filteredEntries.length > 0 ? filteredEntries.map(entry => React.createElement(EntryCard, { key: entry.id, entry, locationColors, permissionTypeColors, onEdit, onDelete })) : React.createElement('div', { className: "text-center py-10" }, React.createElement('p', { className: "text-gray-500 dark:text-gray-400" }, "Nessuna registrazione trovata con i filtri attuali."))
+    )
+  );
+};
+
+
+// --- From components/SettingsView.tsx ---
+const SettingsView = ({ allData, onImportData }) => {
+  const fileInputRef = useRef(null);
+  const [exportType, setExportType] = useState('all');
+  const [startDate, setStartDate] = useState(() => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const monthStr = String(today.getMonth() + 1).padStart(2, '0');
+    return `${year}-${monthStr}-01`;
+  });
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [exportSelectedMonth, setExportSelectedMonth] = useState('');
+
+  const handleExport = () => {
+    try {
+      const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(allData, null, 2))}`;
+      const link = document.createElement("a");
+      link.href = jsonString;
+      link.download = `registro_ore_backup_${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
+    } catch (error) { alert("Si è verificato un errore durante l'esportazione."); }
+  };
+
+  const handleFileChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file || file.type !== "application/json") return alert("Seleziona un file di backup JSON valido.");
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target?.result);
+        if (window.confirm("Sei sicuro? L'importazione sovrascriverà tutti i dati attuali.")) {
+          if (onImportData(data)) {
+            alert("Dati importati con successo! L'app verrà ricaricata.");
+            window.location.reload();
+          } else alert("Il file di backup non è valido o è corrotto.");
+        }
+      } catch (error) { alert("Errore durante l'importazione. Il file potrebbe essere corrotto."); }
+    };
+    reader.readAsText(file);
+    if(event.target) event.target.value = ''; 
+  };
+  
+  const generateMonthOptions = useMemo(() => {
+    const options = [];
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    for (let i = 11; i >= 0; i--) {
+        const monthDate = new Date(currentYear, i, 1);
+        const value = `${currentYear}-${String(i + 1).padStart(2, '0')}`;
+        const label = monthDate.toLocaleString('it-IT', { month: 'long' });
+        options.push(React.createElement('option', { key: value, value: value }, label));
+    }
+    return options;
+  }, []);
+
+  const handleExportMonthChange = (e) => {
+    const value = e.target.value;
+    setExportSelectedMonth(value);
+    if (value) {
+      const [year, month] = value.split('-').map(Number);
+      const monthStr = String(month).padStart(2, '0');
+      const lastDayOfMonth = new Date(year, month, 0).getDate();
+      const firstDayStr = `${year}-${monthStr}-01`;
+      const lastDayStr = `${year}-${monthStr}-${String(lastDayOfMonth).padStart(2, '0')}`;
+      setStartDate(firstDayStr);
+      setEndDate(lastDayStr);
+    } else {
+      const today = new Date();
+      const year = today.getFullYear();
+      const monthStr = String(today.getMonth() + 1).padStart(2, '0');
+      const firstDayStr = `${year}-${monthStr}-01`;
+      setStartDate(firstDayStr);
+      setEndDate(new Date().toISOString().split('T')[0]);
+    }
+  };
+  
+  const handleExportPdf = () => {
+    try {
+        if (!window.jspdf || !window.jspdf.jsPDF) {
+            console.error("jsPDF library not found.");
+            alert("Errore: libreria PDF non caricata. Riprova più tardi.");
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        if (typeof doc.autoTable !== 'function') {
+            console.error("jsPDF autoTable plugin not found.");
+            alert("Errore: il plugin autoTable per PDF non è stato caricato correttamente. Riprova più tardi.");
+            return;
+        }
+
+        const { entries } = allData;
+
+        const start = new Date(startDate + 'T00:00:00');
+        const end = new Date(endDate + 'T23:59:59');
+
+        const filteredEntries = entries.filter(entry => {
+            const entryDate = new Date(entry.date + 'T00:00:00');
+            return entryDate >= start && entryDate <= end;
+        });
+
+        const overtimeEntries = filteredEntries.filter(e => e.type === 'overtime' && (exportType === 'all' || exportType === 'overtime'));
+        const permissionEntries = filteredEntries.filter(e => e.type === 'permission' && (exportType === 'all' || exportType === 'permission'));
+
+        const formatDate = (dateString) => new Date(dateString).toLocaleDateString('it-IT');
+        const formatDuration = (minutes) => `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, '0')}m`;
+
+        let finalY = 20;
+
+        doc.setFontSize(18);
+        doc.text(`Report Ore Lavorative`, 14, finalY);
+        finalY += 5;
+        doc.setFontSize(11);
+        doc.setTextColor(100);
+        doc.text(`Periodo: dal ${formatDate(startDate)} al ${formatDate(endDate)}`, 14, finalY);
+        finalY += 10;
+
+        if (overtimeEntries.length > 0) {
+            doc.setFontSize(14);
+            doc.text("Straordinari", 14, finalY);
+            doc.autoTable({
+                startY: finalY + 2,
+                head: [['Data', 'Sede', 'Inizio', 'Fine', 'Durata', 'Note']],
+                body: overtimeEntries.map(e => [
+                    formatDate(e.date),
+                    e.location,
+                    e.startTime,
+                    e.endTime,
+                    formatDuration(e.duration),
+                    e.notes || ''
+                ]),
+                theme: 'striped',
+                headStyles: { fillColor: [13, 71, 161] },
+            });
+            finalY = doc.lastAutoTable.finalY + 10;
+        }
+
+        if (permissionEntries.length > 0) {
+            doc.setFontSize(14);
+            doc.text("Permessi", 14, finalY);
+            doc.autoTable({
+                startY: finalY + 2,
+                head: [['Data', 'Giustificativo', 'Inizio', 'Fine', 'Durata', 'Note']],
+                body: permissionEntries.map(e => [
+                    formatDate(e.date),
+                    e.permissionType,
+                    e.startTime,
+                    e.endTime,
+                    formatDuration(e.duration),
+                    e.notes || ''
+                ]),
+                theme: 'striped',
+                headStyles: { fillColor: [211, 47, 47] },
+            });
+            finalY = doc.lastAutoTable.finalY + 10;
+        }
+
+        if (overtimeEntries.length === 0 && permissionEntries.length === 0) {
+            doc.text("Nessun dato da esportare per il periodo e il tipo selezionato.", 14, finalY);
+        }
+
+        doc.save(`report_${startDate}_${endDate}.pdf`);
+    } catch (error) {
+        console.error("Failed to generate PDF:", error);
+        alert("Si è verificato un errore imprevisto durante la generazione del PDF.");
+    }
+  };
+
+  return React.createElement('div', { className: "max-w-2xl mx-auto space-y-8" },
+    React.createElement('div', { className: "text-center" }, React.createElement('h2', { className: "text-2xl font-bold text-gray-800 dark:text-gray-200" }, "Impostazioni"), React.createElement('p', { className: "text-gray-500 dark:text-gray-400" }, "Gestisci i dati della tua applicazione.")),
+    React.createElement('div', { className: "bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md" },
+      React.createElement('h3', { className: "text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200" }, "Backup e Ripristino"),
+      React.createElement('div', { className: "space-y-4" },
+        React.createElement('div', null,
+          React.createElement('button', { onClick: handleExport, className: "w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-secondary hover:bg-accent" }, React.createElement(DownloadIcon, { className: "w-5 h-5 mr-2" }), "Esporta Dati"),
+          React.createElement('p', { className: "mt-2 text-sm text-gray-500 dark:text-gray-400" }, "Salva una copia di tutti i tuoi dati (straordinari, permessi, sedi, etc.) in un file.")
+        ),
+        React.createElement('div', null,
+          React.createElement('input', { type: "file", ref: fileInputRef, onChange: handleFileChange, className: "hidden", accept: ".json" }),
+          React.createElement('button', { onClick: () => fileInputRef.current?.click(), className: "w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-base font-medium rounded-md shadow-sm text-dark dark:text-light bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600" }, React.createElement(UploadIcon, { className: "w-5 h-5 mr-2" }), "Importa Dati"),
+          React.createElement('p', { className: "mt-2 text-sm text-gray-500 dark:text-gray-400" }, "Ripristina i dati da un file di backup. Attenzione: i dati attuali verranno sovrascriti.")
+        )
+      )
+    ),
+    React.createElement('div', { className: "bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md" },
+      React.createElement('h3', { className: "text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200" }, "Esporta Report PDF"),
+      React.createElement('div', { className: "space-y-4" },
+        React.createElement('div', null,
+            React.createElement('label', { htmlFor: "export-month-select", className: "block text-sm font-medium text-gray-700 dark:text-gray-300" }, "Seleziona Mese (Rapido)"),
+            React.createElement('select', { 
+                id: "export-month-select", 
+                value: exportSelectedMonth, 
+                onChange: handleExportMonthChange, 
+                className: "mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm" 
+            },
+                React.createElement('option', { value: "" }, "Periodo personalizzato"),
+                generateMonthOptions
+            )
+        ),
+        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
+            React.createElement('div', null,
+                React.createElement('label', { htmlFor: "startDate", className: "block text-sm font-medium text-gray-700 dark:text-gray-300" }, "Data Inizio"),
+                React.createElement('input', { type: "date", id: "startDate", value: startDate, onChange: (e) => { setStartDate(e.target.value); setExportSelectedMonth(''); }, required: true, className: "mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm", disabled: !!exportSelectedMonth })
+            ),
+            React.createElement('div', null,
+                React.createElement('label', { htmlFor: "endDate", className: "block text-sm font-medium text-gray-700 dark:text-gray-300" }, "Data Fine"),
+                React.createElement('input', { type: "date", id: "endDate", value: endDate, onChange: (e) => { setEndDate(e.target.value); setExportSelectedMonth(''); }, required: true, className: "mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm", disabled: !!exportSelectedMonth })
+            )
+        ),
+        React.createElement('div', null,
+            React.createElement('label', { htmlFor: "exportType", className: "block text-sm font-medium text-gray-700 dark:text-gray-300" }, "Tipo di dati"),
+            React.createElement('select', { id: "exportType", value: exportType, onChange: (e) => setExportType(e.target.value), className: "mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm" },
+                React.createElement('option', { value: "all" }, "Straordinari e Permessi"),
+                React.createElement('option', { value: "overtime" }, "Solo Straordinari"),
+                React.createElement('option', { value: "permission" }, "Solo Permessi")
+            )
+        ),
+        React.createElement('button', { onClick: handleExportPdf, className: "w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-dark" }, React.createElement(DownloadIcon, { className: "w-5 h-5 mr-2" }), "Genera e Scarica PDF")
+      )
+    )
+  );
+};
+
+
+// --- From App.tsx ---
+const App = () => {
+  const data = useLogData();
+  const [currentView, setCurrentView] = useState('dashboard');
+  const [editingEntry, setEditingEntry] = useState(null);
+  const [isAddMenuOpen, setAddMenuOpen] = useState(false);
+  const addMenuRef = useRef(null);
+  
+  const { entries, locations, locationColors, permissionTypes, permissionTypeColors, addEntry, updateEntry, deleteEntry, importData } = data;
+
+  useEffect(() => {
+    const LAST_PROMPT_KEY = 'log_last_backup_prompt_month';
+    const lastPromptMonth = localStorage.getItem(LAST_PROMPT_KEY);
+    const currentMonth = new Date().getMonth().toString();
+    if (lastPromptMonth !== currentMonth) {
+      setTimeout(() => {
+        if (window.confirm("Promemoria: ti consigliamo di effettuare un backup dei tuoi dati regolarmente. Vuoi andare alla pagina delle impostazioni per esportarli ora?")) {
+          setCurrentView('settings');
+        }
+        localStorage.setItem(LAST_PROMPT_KEY, currentMonth);
+      }, 1500);
+    }
+    
+    const handleClickOutside = (event) => {
+      if (addMenuRef.current && !addMenuRef.current.contains(event.target)) {
+        setAddMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+  
+  const handleNavigation = (view) => {
+    setCurrentView(view);
+    setEditingEntry(null);
+  };
+
+  const handleAddOvertime = () => { setEditingEntry(null); setCurrentView('overtimeForm'); setAddMenuOpen(false); };
+  const handleAddPermission = () => { setEditingEntry(null); setCurrentView('permissionForm'); setAddMenuOpen(false); };
+  const handleEdit = (entry) => { setEditingEntry(entry); setCurrentView(entry.type === 'overtime' ? 'overtimeForm' : 'permissionForm'); };
+  
+  const handleSave = (entryData) => {
+    (entryData.id ? updateEntry : addEntry)(entryData);
+    setCurrentView('history');
+    setEditingEntry(null);
+  };
+  
+  const renderView = () => {
+    switch (currentView) {
+      case 'dashboard': return React.createElement(Dashboard, { onAddOvertime: handleAddOvertime, onAddPermission: handleAddPermission });
+      case 'overtimeForm': return React.createElement(OvertimeForm, { onSave: handleSave, onCancel: () => handleNavigation(editingEntry ? 'history' : 'dashboard'), existingEntry: editingEntry, locations });
+      case 'permissionForm': return React.createElement(PermissionForm, { onSave: handleSave, onCancel: () => handleNavigation(editingEntry ? 'history' : 'dashboard'), existingEntry: editingEntry, permissionTypes });
+      case 'history': return React.createElement(HistoryList, { entries, onEdit: handleEdit, onDelete: deleteEntry, locationColors, permissionTypeColors });
+      case 'search': return React.createElement(SearchView, { entries, permissionTypes, locationColors, permissionTypeColors, onEdit: handleEdit, onDelete: deleteEntry });
+      case 'settings': return React.createElement(SettingsView, { allData: data, onImportData: importData });
+      default: return React.createElement(Dashboard, { entries, onAddOvertime: handleAddOvertime, onAddPermission: handleAddPermission });
+    }
+  };
+
+  const NavItem = ({ view, label, icon }) => React.createElement('button', { onClick: () => handleNavigation(view), className: `flex flex-col items-center justify-center w-full pt-2 pb-1 text-xs transition-colors ${currentView === view ? 'text-primary dark:text-accent' : 'text-gray-500 dark:text-gray-400 hover:text-primary'}` }, icon, React.createElement('span', { className: "mt-1" }, label));
+  const DesktopNavItem = ({ view, label, icon }) => React.createElement('button', { onClick: () => handleNavigation(view), className: `flex items-center w-full p-3 text-left text-base rounded-lg transition-colors ${currentView === view ? 'bg-secondary text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'}` }, cloneElement(icon, { className: "w-6 h-6 mr-3" }), React.createElement('span', null, label));
+
+  return React.createElement('div', { className: "min-h-screen bg-light dark:bg-dark text-dark dark:text-light font-sans flex" },
+    React.createElement('nav', { className: "hidden md:flex flex-col w-64 bg-white dark:bg-gray-800 shadow-lg flex-shrink-0" },
+      React.createElement('div', { className: "bg-primary text-white p-4 flex items-center h-[68px]" }, React.createElement('h1', { className: "text-xl font-bold" }, "Registro Ore")),
+      React.createElement('div', { className: "flex flex-col p-4 space-y-2" },
+        React.createElement(DesktopNavItem, { view: "dashboard", label: "Home", icon: React.createElement(HomeIcon) }),
+        React.createElement(DesktopNavItem, { view: "history", label: "Storico", icon: React.createElement(CalendarIcon) }),
+        React.createElement(DesktopNavItem, { view: "search", label: "Ricerca", icon: React.createElement(MagnifyingGlassIcon) }),
+        React.createElement(DesktopNavItem, { view: "settings", label: "Impostazioni", icon: React.createElement(CogIcon) })
+      ),
+      React.createElement('div', { className: "mt-auto p-4 space-y-3" },
+        React.createElement('button', { onClick: handleAddOvertime, className: "w-full flex items-center justify-center px-4 py-3 text-base font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-dark" }, React.createElement(PlusIcon, { className: "w-5 h-5 mr-2" }), "Straordinario"),
+        React.createElement('button', { onClick: handleAddPermission, className: "w-full flex items-center justify-center px-4 py-3 text-base font-medium rounded-md shadow-sm text-white bg-permission hover:bg-permission-dark" }, React.createElement(BedIcon, { className: "w-5 h-5 mr-2" }), "Permesso")
+      )
+    ),
+    React.createElement('div', { className: "flex-1 flex flex-col min-w-0" },
+      React.createElement('header', { className: "md:hidden bg-primary text-white shadow-md p-4 flex justify-between items-center sticky top-0 z-20" },
+        React.createElement('h1', { className: "text-xl font-bold" }, "Registro Ore"),
+        React.createElement('div', { className: "relative", ref: addMenuRef },
+          React.createElement('button', { onClick: () => setAddMenuOpen(!isAddMenuOpen), className: "bg-secondary hover:bg-accent text-white p-2 rounded-full shadow-lg" }, React.createElement(PlusIcon, { className: "w-6 h-6" })),
+          isAddMenuOpen && React.createElement('div', { className: "absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-20" },
+            React.createElement('button', { onClick: handleAddOvertime, className: "w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" }, "Straordinario"),
+            React.createElement('button', { onClick: handleAddPermission, className: "w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" }, "Permesso")
+          )
+        )
+      ),
+      React.createElement('main', { className: "flex-grow p-4 md:p-6 mb-16 md:mb-0 overflow-y-auto" }, renderView())
+    ),
+    React.createElement('div', { className: "fixed bottom-0 left-0 right-0 h-16 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg md:hidden z-10" },
+      React.createElement('div', { className: "flex justify-around items-center h-full" },
+        React.createElement(NavItem, { view: "dashboard", label: "Home", icon: React.createElement(HomeIcon, { className: "w-6 h-6" }) }),
+        React.createElement(NavItem, { view: "history", label: "Storico", icon: React.createElement(CalendarIcon, { className: "w-6 h-6" }) }),
+        React.createElement(NavItem, { view: "search", label: "Ricerca", icon: React.createElement(MagnifyingGlassIcon, { className: "w-6 h-6" }) }),
+        React.createElement(NavItem, { view: "settings", label: "Impostazioni", icon: React.createElement(CogIcon, { className: "w-6 h-6" }) })
+      )
+    )
+  );
+};
+
+// --- From index.tsx ---
+const rootElement = document.getElementById('root');
+if (!rootElement) throw new Error("Could not find root element to mount to");
+const root = ReactDOM.createRoot(rootElement);
+root.render(React.createElement(React.StrictMode, null, React.createElement(App)));
+
+    </script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then(registration => {
+            console.log('SW registered: ', registration);
+          }).catch(registrationError => {
+            console.log('SW registration failed: ', registrationError);
+          });
+        });
+      }
+    </script>
+  </body>
+</html>
