@@ -1,0 +1,16 @@
+{
+  "short_name": "Registro Ore",
+  "name": "Registro Permessi e Straordinari",
+  "description": "Un'applicazione per registrare e consultare ore di straordinario e giorni di assenza (ferie, permessi, malattia), con riepiloghi, storico e funzionalità di backup dei dati.",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0D47A1",
+  "background_color": "#F5F5F5"
+}
